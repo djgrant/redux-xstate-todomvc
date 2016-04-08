@@ -84,12 +84,15 @@ TodoItem.propTypes = {
   completeTodo: PropTypes.func.isRequired
 };
 
-const relatedTodoSelector = createSelector(
-  [state => state.todos, (_, ownProps) => ownProps.todo.other],
-  (todos, otherId) => ({ other: otherId === null ? null : todos[otherId] })
-);
+const relatedTodoSelectorFactory = () =>
+  createSelector(
+    [state => state.todos, (_, ownProps) => ownProps.todo.other],
+    (todos, otherId) => ({ other: otherId === null ? null : todos[otherId] })
+  );
 
-const ConnectedTodoItem = connect(relatedTodoSelector)(TodoItem);
+const makeMapStateToProps = () => relatedTodoSelectorFactory();
+
+const ConnectedTodoItem = connect(makeMapStateToProps)(TodoItem);
 
 // MWE: export TodoItem for the plain scenario,
 // export ConnectedTodoItem for the scenario with 1 selector
