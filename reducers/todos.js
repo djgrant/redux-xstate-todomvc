@@ -7,13 +7,22 @@ import {
   CLEAR_COMPLETED
 } from "../constants/ActionTypes";
 
-const initialState = [
-  {
-    text: "Use Redux",
+// MWE: For testing:
+const STORE_SIZE = 10000;
+
+const initialState = [];
+
+for (var i = 0; i < STORE_SIZE; i++) {
+  initialState.push({
+    text: "Item" + i,
     completed: false,
-    id: 0
-  }
-];
+    id: i,
+    // array index as reference to some other object in the state tree.
+    // in the real world todos would probably be a map and 'initialState[i - 1].id' would be used..
+    // but let's not make this test unecessary inefficient by filtering for the correct todo
+    other: i > 0 ? i - 1 : null
+  });
+}
 
 export default function todos(state = initialState, action) {
   switch (action.type) {
