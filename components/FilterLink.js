@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import shallowCompare from "react-addons-shallow-compare";
 import classnames from "classnames";
 import { setFilter } from "../actions";
 import {
@@ -16,10 +15,6 @@ const FILTER_TITLES = {
 };
 
 class FilterLink extends Component {
-  shouldComponentUpdate(nextProps, nextState) {
-    return shallowCompare(this, nextProps, nextState);
-  }
-
   constructor(props) {
     super(props);
     this.handleClick = this.handleClick.bind(this);
