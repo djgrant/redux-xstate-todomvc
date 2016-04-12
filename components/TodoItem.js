@@ -53,7 +53,7 @@ class TodoItem extends Component {
             onChange={() => completeTodo(todo.id)}
           />
           <label onDoubleClick={this.handleDoubleClick.bind(this)}>
-            {todo.text} {isRelatedTodoCompleted ? "Yes!" : " . "}
+            {todo.text} {isRelatedTodoCompleted ? "(+)" : "(-)"}
           </label>
           <button className="destroy" onClick={() => deleteTodo(todo.id)} />
         </div>
@@ -72,7 +72,6 @@ class TodoItem extends Component {
     );
   }
 }
-
 TodoItem.propTypes = {
   todo: PropTypes.object.isRequired,
   isCompleted: PropTypes.bool,
@@ -82,26 +81,15 @@ TodoItem.propTypes = {
   completeTodo: PropTypes.func.isRequired
 };
 
-function mapStateToProps(state, ownProps) {
-  const todo = state.todos.byId[ownProps.id];
-  const isCompleted = state.todos.isCompletedById[ownProps.id];
-
-  let isRelatedTodoCompleted;
-  if (todo.relatedId != null) {
-    isRelatedTodoCompleted = state.todos.isCompletedById[todo.relatedId];
-  }
-
+const mapStateToProps = ({ todos }, { id }) => {
+  const todo = todos.byId[id];
   return {
     todo,
-    isCompleted,
-    isRelatedTodoCompleted
+    isCompleted: todos.isCompletedById[id],
+    isRelatedTodoCompleted: todos.isCompletedById[todo.relatedId]
   };
-}
+};
 
-const ConnectedTodoItem = connect(mapStateToProps, {
-  completeTodo,
-  editTodo,
-  deleteTodo
-})(TodoItem);
-
-export default ConnectedTodoItem;
+export default connect(mapStateToProps, { completeTodo, editTodo, deleteTodo })(
+  TodoItem
+);

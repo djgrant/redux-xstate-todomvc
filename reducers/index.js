@@ -38,7 +38,6 @@ export const getListedCount = createSelector(
 
 export const getCompletedCount = createSelector(
   [state => state.todos.listedIds, state => state.todos.isCompletedById],
-  (listedIds, isCompletedById) => {
-    return listedIds.filter(id => isCompletedById[id]).length;
-  }
+  (listedIds, isCompletedById) =>
+    listedIds.filter(id => isCompletedById[id]).length
 );

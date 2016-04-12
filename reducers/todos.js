@@ -30,9 +30,10 @@ function todo(state, action) {
         text: action.text
       };
     case EDIT_TODO:
-      return Object.assign({}, state, {
+      return {
+        ...state,
         text: action.text
-      });
+      };
   }
 }
 
@@ -40,9 +41,10 @@ function byId(state = initialById, action) {
   switch (action.type) {
     case ADD_TODO:
     case EDIT_TODO:
-      return Object.assign({}, state, {
+      return {
+        ...state,
         [action.id]: todo(state[action.id], action)
-      });
+      };
     default:
       return state;
   }
@@ -64,9 +66,10 @@ function listedIds(state = initialListedIds, action, { isCompletedById }) {
 function isCompletedById(state = {}, action, { listedIds }) {
   switch (action.type) {
     case COMPLETE_TODO:
-      return Object.assign({}, state, {
+      return {
+        ...state,
         [action.id]: !state[action.id]
-      });
+      };
     case COMPLETE_ALL:
       const areAllCompleted = listedIds.every(id => state[id]);
       if (areAllCompleted) {
