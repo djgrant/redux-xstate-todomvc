@@ -1,17 +1,17 @@
 import React, { Component, PropTypes } from "react";
 import classnames from "classnames";
-import TodoTextInput from "./TodoTextInput";
-import { PureRenderMixin } from "pure-render-mixin";
-import { createSelector } from "reselect";
+import shallowCompare from "react-addons-shallow-compare";
 import { connect } from "react-redux";
+import TodoTextInput from "./TodoTextInput";
+import { completeTodo, editTodo, deleteTodo } from "../actions";
 
 class TodoItem extends Component {
+  shouldComponentUpdate(nextProps, nextState) {
+    return shallowCompare(this, nextProps, nextState);
+  }
+
   constructor(props, context) {
     super(props, context);
-    // MWE: all props are immutable objects. So let's apply pure render mxixin for a big performance gain!
-    this.shouldComponentUpdate = PureRenderMixin.shouldComponentUpdate.bind(
-      this
-    );
     this.state = {
       editing: false
     };
@@ -31,12 +31,13 @@ class TodoItem extends Component {
   }
 
   render() {
-    /**
-     * MWE: "other" is a reference (id of) to an arbitrarily other todo item.
-     * In a real app this denotes a reference to something like a user, tags
-     * or something else that lives in some other part of the state tree
-     */
-    const { todo, completeTodo, deleteTodo, other } = this.props;
+    const {
+      todo,
+      isCompleted,
+      isRelatedTodoCompleted,
+      completeTodo,
+      deleteTodo
+    } = this.props;
 
     let element;
     if (this.state.editing) {
@@ -53,11 +54,11 @@ class TodoItem extends Component {
           <input
             className="toggle"
             type="checkbox"
-            checked={todo.completed}
+            checked={isCompleted}
             onChange={() => completeTodo(todo.id)}
           />
           <label onDoubleClick={this.handleDoubleClick.bind(this)}>
-            {todo.text} {other && other.completed ? "Yes!" : " . "}
+            {todo.text} {isRelatedTodoCompleted ? "Yes!" : " . "}
           </label>
           <button className="destroy" onClick={() => deleteTodo(todo.id)} />
         </div>
@@ -67,7 +68,7 @@ class TodoItem extends Component {
     return (
       <li
         className={classnames({
-          completed: todo.completed,
+          completed: isCompleted,
           editing: this.state.editing
         })}
       >
@@ -79,23 +80,33 @@ class TodoItem extends Component {
 
 TodoItem.propTypes = {
   todo: PropTypes.object.isRequired,
+  isCompleted: PropTypes.bool,
+  isRelatedTodoCompleted: PropTypes.bool,
   editTodo: PropTypes.func.isRequired,
   deleteTodo: PropTypes.func.isRequired,
   completeTodo: PropTypes.func.isRequired
 };
 
-const relatedTodoSelectorFactory = () =>
-  createSelector(
-    [state => state.todos, (_, ownProps) => ownProps.todo.other],
-    (todos, otherId) => ({ other: otherId === null ? null : todos[otherId] })
-  );
+function mapStateToProps(state, ownProps) {
+  const todo = state.todos.byId[ownProps.id];
+  const isCompleted = state.todos.isCompletedById[ownProps.id];
 
-const makeMapStateToProps = () => relatedTodoSelectorFactory();
+  let isRelatedTodoCompleted;
+  if (todo.relatedId != null) {
+    isRelatedTodoCompleted = state.todos.isCompletedById[todo.relatedId];
+  }
 
-const ConnectedTodoItem = connect(makeMapStateToProps)(TodoItem);
+  return {
+    todo,
+    isCompleted,
+    isRelatedTodoCompleted
+  };
+}
 
-// MWE: export TodoItem for the plain scenario,
-// export ConnectedTodoItem for the scenario with 1 selector
-// export default TodoItem
+const ConnectedTodoItem = connect(mapStateToProps, {
+  completeTodo,
+  editTodo,
+  deleteTodo
+})(TodoItem);
 
 export default ConnectedTodoItem;
