@@ -18,7 +18,8 @@ for (let i = 0; i < STORE_SIZE; i++) {
   initialById[nextId] = {
     text: "Item" + i,
     id: nextId,
-    relatedId: i > 0 ? "prefilled-" + (i - 1) : null
+    relatedId: i > 0 ? "prefilled-" + (i - 1) : null,
+    isCompleted: false
   };
 }
 
@@ -28,57 +29,53 @@ function todo(state, action) {
       return {
         text: action.text,
         id: action.id,
-        relatedId: null
+        relatedId: null,
+        isCompleted: false
       };
     case EDIT_TODO:
       return {
         ...state,
         text: action.text
       };
+    case COMPLETE_TODO:
+      return {
+        ...state,
+        isCompleted: !state.isCompleted
+      };
   }
 }
 
-function byId(state = initialById, action) {
+function byId(state = initialById, action, { listedIds }) {
   switch (action.type) {
     case ADD_TODO:
     case EDIT_TODO:
+    case COMPLETE_TODO:
       return {
         ...state,
         [action.id]: todo(state[action.id], action)
       };
+    case COMPLETE_ALL:
+      const areSomeActive = listedIds.some(id => !state[id].isCompleted);
+      return Object.keys(state).reduce((nextState, id) => {
+        nextState[id] = {
+          ...state[id],
+          isCompleted: areSomeActive
+        };
+        return nextState;
+      }, {});
     default:
       return state;
   }
 }
 
-function listedIds(state = initialListedIds, action, { isCompletedById }) {
+function listedIds(state = initialListedIds, action, { byId }) {
   switch (action.type) {
     case ADD_TODO:
       return [action.id, ...state];
     case DELETE_TODO:
-      return state.filter(todoId => todoId !== action.id);
+      return state.filter(id => id !== action.id);
     case CLEAR_COMPLETED:
-      return state.filter(id => !isCompletedById[id]);
-    default:
-      return state;
-  }
-}
-
-function isCompletedById(state = {}, action, { listedIds }) {
-  switch (action.type) {
-    case COMPLETE_TODO:
-      return {
-        ...state,
-        [action.id]: !state[action.id]
-      };
-    case COMPLETE_ALL:
-      const areAllCompleted = listedIds.every(id => state[id]);
-      if (areAllCompleted) {
-        return {};
-      }
-      let nextState = {};
-      listedIds.forEach(id => (nextState[id] = true));
-      return nextState;
+      return state.filter(id => !byId[id].isCompleted);
     default:
       return state;
   }
@@ -86,8 +83,7 @@ function isCompletedById(state = {}, action, { listedIds }) {
 
 export default function todos(state = {}, action) {
   return {
-    byId: byId(state.byId, action),
-    listedIds: listedIds(state.listedIds, action, state),
-    isCompletedById: isCompletedById(state.isCompletedById, action, state)
+    byId: byId(state.byId, action, state),
+    listedIds: listedIds(state.listedIds, action, state)
   };
 }
