@@ -3,38 +3,30 @@ import classnames from "classnames";
 import { connect } from "react-redux";
 import TodoTextInput from "./TodoTextInput";
 import { completeTodo, editTodo, deleteTodo } from "../actions";
+import { matchesState } from "xstate";
 
 class TodoItem extends Component {
-  constructor(props, context) {
-    super(props, context);
-    this.state = {
-      editing: false
-    };
-  }
-
-  handleDoubleClick() {
-    this.setState({ editing: true });
-  }
-
-  handleSave(id, text) {
-    if (text.length === 0) {
-      this.props.deleteTodo(id);
-    } else {
-      this.props.editTodo(id, text);
-    }
-    this.setState({ editing: false });
-  }
+  // handleSave(id, text) {
+  //   if (text.length === 0) {
+  //     this.props.deleteTodo(id);
+  //   } else {
+  //     this.props.editTodo(id, text);
+  //   }
+  //   this.setState({ editing: false });
+  // }
 
   render() {
-    const { todo, relatedTodo, completeTodo, deleteTodo } = this.props;
+    const { todo, relatedTodo, completed, editing } = this.props;
+    const dispatch = (type, data) =>
+      this.props.dispatch({ type, id: todo.id, ...data });
 
     let element;
-    if (this.state.editing) {
+    if (editing) {
       element = (
         <TodoTextInput
           text={todo.text}
-          editing={this.state.editing}
-          onSave={text => this.handleSave(todo.id, text)}
+          editing={editing}
+          onSave={text => dispatch("SAVE_TODO", { text })}
         />
       );
     } else {
@@ -43,10 +35,10 @@ class TodoItem extends Component {
           <input
             className="toggle"
             type="checkbox"
-            checked={todo.isCompleted}
+            checked={completed}
             onChange={() => completeTodo(todo.id)}
           />
-          <label onDoubleClick={this.handleDoubleClick.bind(this)}>
+          <label onDoubleClick={() => dispatch("DOUBLE_CLICK_TODO")}>
             {todo.text} {relatedTodo && relatedTodo.isCompleted ? "(+)" : "(-)"}
           </label>
           <button className="destroy" onClick={() => deleteTodo(todo.id)} />
@@ -54,43 +46,30 @@ class TodoItem extends Component {
       );
     }
 
-    return (
-      <li
-        className={classnames({
-          completed: todo.isCompleted,
-          editing: this.state.editing
-        })}
-      >
-        {element}
-      </li>
-    );
+    return <li className={classnames({ completed, editing })}>{element}</li>;
   }
 }
 TodoItem.propTypes = {
   todo: PropTypes.object.isRequired,
-  isCompleted: PropTypes.bool,
-  isRelatedTodoCompleted: PropTypes.bool,
-  editTodo: PropTypes.func.isRequired,
-  deleteTodo: PropTypes.func.isRequired,
-  completeTodo: PropTypes.func.isRequired
+  editing: PropTypes.bool,
+  completed: PropTypes.bool
 };
 
 const makeMapStateToProps = (initialState, initialProps) => {
   const { id } = initialProps;
   const mapStateToProps = state => {
     const { todos } = state;
-    const todo = todos.byId[id];
-    const relatedTodo = todo.relatedId && todos.byId[todo.relatedId];
+    const todo = todos.byId[id].data;
+    const statechart = todos.byId[id].statechart;
+    const relatedTodo = todo.relatedId && todos.byId[todo.relatedId].data;
     return {
       todo,
-      relatedTodo
+      relatedTodo,
+      editing: matchesState("edit", statechart),
+      completed: matchesState("view.complete", statechart)
     };
   };
   return mapStateToProps;
 };
 
-export default connect(makeMapStateToProps, {
-  completeTodo,
-  editTodo,
-  deleteTodo
-})(TodoItem);
+export default connect(makeMapStateToProps)(TodoItem);
